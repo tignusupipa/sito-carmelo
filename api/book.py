@@ -1,40 +1,29 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import os
 import json
 from datetime import datetime, timedelta
 
-app = Flask(__name__, static_folder='../', static_url_path='')
+app = Flask(__name__)
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 def get_calendar_service():
-    # 1. Se sei in locale su VS Code e trova il file, usa direttamente quello
     if os.path.exists('credentials.json'):
         creds = service_account.Credentials.from_service_account_file(
             'credentials.json', scopes=SCOPES
         )
     else:
-        # 2. Altrimenti (quando saremo online su Vercel) legge dalla variabile d'ambiente
         creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
         if not creds_json:
-            raise Exception("Credenziali Google non trovate (né file locale né variabile d'ambiente)")
+            raise Exception("Credenziali Google non trovate (variabile d'ambiente mancante)")
         creds_dict = json.loads(creds_json)
         creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
         
-    service = build('calendar', 'v3', credentials=creds)
-    return service
+    return build('calendar', 'v3', credentials=creds)
 
-# Rotta per aprire la pagina web principale
-@app.route('/')
-def serve_index():
-    return send_from_directory('../', 'index.html')
-
-# ---> ECCO LA MODIFICA FONDAMENTALE <---
-# Abbiamo aggiunto strict_slashes=False e una doppia rotta di sicurezza
-@app.route('/api/book', methods=['POST'], strict_slashes=False)
-@app.route('/book', methods=['POST'], strict_slashes=False)
+@app.route('/api/book', methods=['POST'])
 def book_appointment():
     try:
         data = request.get_json()
@@ -67,7 +56,7 @@ def book_appointment():
             },
         }
         
-        event = service_client.events().insert(calendarId=calendar_id, body=event_body).execute()
+        service_client.events().insert(calendarId=calendar_id, body=event_body).execute()
         
         return jsonify({"success": True, "message": "Appuntamento aggiunto con successo!"}), 200
     except Exception as e:
