@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carmelo Barbiere - Prenota Online</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Plus Jakarta Sans', sans-serif; } </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen flex flex-col justify-between">
+    
+    <header class="w-full py-6 px-6 border-b border-zinc-900 flex justify-between items-center max-w-xl mx-auto">
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-amber-500">Carmelo Barbiere</h1>
+            <p class="text-xs text-zinc-400">Salone & Grooming</p>
+        </div>
+        <span class="px-3 py-1 bg-amber-500/10 text-amber-400 text-xs font-medium rounded-full border border-amber-500/20">Live Sync Calendar</span>
+    </header>
+
+    <main class="w-full max-w-xl mx-auto p-6 flex-grow">
+        <div class="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-6 shadow-2xl">
+            <h2 class="text-lg font-semibold mb-1 text-zinc-100">Prenota il tuo orario</h2>
+            <p class="text-xs text-zinc-400 mb-6">L'appuntamento apparirà direttamente nel calendario del barbiere.</p>
+            
+            <form id="bookingForm" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wider">Nome e Cognome</label>
+                    <input type="text" id="clientName" required placeholder="Es. Mario Rossi" 
+                        class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 focus:outline-none focus:border-amber-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wider">Servizio</label>
+                    <select id="service" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 focus:outline-none focus:border-amber-500">
+                        <option value="Taglio Capelli (15€)">Taglio Capelli — 15€</option>
+                        <option value="Barba (10€)">Barba — 10€</option>
+                        <option value="Taglio + Barba (22€)">Taglio + Barba — 22€</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wider">Data</label>
+                    <input type="date" id="bookingDate" required 
+                        class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 focus:outline-none focus:border-amber-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wider">Orario</label>
+                    <select id="bookingTime" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-100 focus:outline-none focus:border-amber-500">
+                        <option value="09:00">09:00</option>
+                        <option value="09:30">09:30</option>
+                        <option value="10:00">10:00</option>
+                        <option value="10:30">10:30</option>
+                        <option value="11:00">11:00</option>
+                        <option value="15:00">15:00</option>
+                        <option value="15:30">15:30</option>
+                        <option value="16:00">16:00</option>
+                        <option value="16:30">16:30</option>
+                        <option value="17:00">17:00</option>
+                        <option value="17:30">17:30</option>
+                        <option value="18:00">18:00</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="submitBtn"
+                    class="w-full bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold py-4 px-4 rounded-xl transition-all shadow-lg shadow-amber-500/10 cursor-pointer">
+                    Conferma e Blocca Appuntamento
+                </button>
+            </form>
+
+            <div id="responseMessage" class="mt-4 text-center text-sm hidden"></div>
+        </div>
+    </main>
+
+    <footer class="w-full py-6 text-center text-xs text-zinc-500 border-t border-zinc-900">
+        &copy; 2026 Carmelo Barbiere • Google Calendar Sync
+    </footer>
+
+    <script>
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('bookingDate').value = today;
+        document.getElementById('bookingDate').min = today;
+
+        document.getElementById('bookingForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submitBtn');
+            const msgBox = document.getElementById('responseMessage');
+            
+            const name = document.getElementById('clientName').value;
+            const service = document.getElementById('service').value;
+            const date = document.getElementById('bookingDate').value;
+            const time = document.getElementById('bookingTime').value;
+            
+            btn.disabled = true;
+            btn.textContent = "Invio in corso...";
+            msgBox.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/book', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, service, date, time })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    msgBox.textContent = "Prenotazione effettuata con successo! Controlla il calendario.";
+                    msgBox.className = "mt-4 text-center text-sm text-emerald-400 font-medium";
+                    msgBox.classList.remove('hidden');
+                    document.getElementById('bookingForm').reset();
+                    document.getElementById('bookingDate').value = today;
+                } else {
+                    throw new Error(result.error || "Errore sconosciuto");
+                }
+            } catch (err) {
+                msgBox.textContent = "Errore: " + err.message;
+                msgBox.className = "mt-4 text-center text-sm text-rose-400 font-medium";
+                msgBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Conferma e Blocca Appuntamento";
+            }
+        });
+    </script>
+</body>
+</html>
