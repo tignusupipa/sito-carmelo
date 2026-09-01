@@ -1,11 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import os
 import json
 from datetime import datetime, timedelta
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../', static_url_path='')
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
@@ -22,6 +22,11 @@ def get_calendar_service():
         creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
         
     return build('calendar', 'v3', credentials=creds)
+
+# Rotta per aprire la pagina web principale (index.html)
+@app.route('/')
+def serve_index():
+    return send_from_directory('../', 'index.html')
 
 @app.route('/api/book', methods=['POST'])
 def book_appointment():
