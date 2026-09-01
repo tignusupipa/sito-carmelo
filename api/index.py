@@ -31,7 +31,10 @@ def get_calendar_service():
 def serve_index():
     return send_from_directory('../', 'index.html')
 
-@app.route('/api/book', methods=['POST'])
+# ---> ECCO LA MODIFICA FONDAMENTALE <---
+# Abbiamo aggiunto strict_slashes=False e una doppia rotta di sicurezza
+@app.route('/api/book', methods=['POST'], strict_slashes=False)
+@app.route('/book', methods=['POST'], strict_slashes=False)
 def book_appointment():
     try:
         data = request.get_json()
